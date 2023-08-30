@@ -1,3 +1,3 @@
-#lLittle-lemon
+# Little-lemon
 
-Food ordering mobile application
+Food ordering mobile application.
