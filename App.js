@@ -11,7 +11,7 @@ import { SplashScreen } from "./screens/SplashScreen";
 export default function App() {
   const [profile, setProfile] = useState();
   const [loading, setLoading] = useState(true);
-  const getData = useReadProfile();
+  // const getData = useReadProfile();
 
   useEffect(() => {
     const getData = async () => {

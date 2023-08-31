@@ -3,8 +3,7 @@ import { Home } from "../screens/Home";
 import { Onboarding } from "../screens/Onboarding";
 import { Profile } from "../screens/Profile";
 import { Image, StyleSheet, View } from "react-native";
-import { AntDesign } from "@expo/vector-icons";
-import { useProfileContext } from "../context/profileContext";
+import { Header } from "../components/Header";
 
 const Stack = createNativeStackNavigator();
 export const StackNavigator = ({ profile }) => {
@@ -17,7 +16,7 @@ export const StackNavigator = ({ profile }) => {
           </View>
         ),
       }}
-      initialRouteName={profile ? "Profile" : "Onboarding"}>
+      initialRouteName={profile ? "Home" : "Onboarding"}>
       <Stack.Screen name="Onboarding" component={Onboarding} />
       <Stack.Screen
         name="Profile"
@@ -37,6 +36,13 @@ export const StackNavigator = ({ profile }) => {
             </View>
           ),
         }}
+      />
+      <Stack.Screen
+        name="Home"
+        component={Home}
+        options={({ navigation }) => ({
+          headerTitle: (props) => <Header {...props} navigation={navigation} />,
+        })}
       />
     </Stack.Navigator>
   );
