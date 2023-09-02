@@ -3,15 +3,14 @@ import { StyleSheet, Text, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { StackNavigator } from "./navigators/stack";
 import { useEffect, useState } from "react";
-import { useReadProfile } from "./utills/hooks";
-import { ProfileProvider, useProfileContext } from "./context/profileContext";
+import { ProfileProvider } from "./context/profileContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SplashScreen } from "./screens/SplashScreen";
+import { MenuContextProvider } from "./context/menuContext";
 
 export default function App() {
   const [profile, setProfile] = useState();
   const [loading, setLoading] = useState(true);
-  // const getData = useReadProfile();
 
   useEffect(() => {
     const getData = async () => {
@@ -34,9 +33,11 @@ export default function App() {
   }
   return (
     <ProfileProvider>
-      <NavigationContainer>
-        <StackNavigator profile={profile} />
-      </NavigationContainer>
+      <MenuContextProvider>
+        <NavigationContainer>
+          <StackNavigator profile={profile} />
+        </NavigationContainer>
+      </MenuContextProvider>
     </ProfileProvider>
   );
 }

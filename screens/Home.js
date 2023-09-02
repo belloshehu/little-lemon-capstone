@@ -10,34 +10,29 @@ import {
 import { AntDesign } from "@expo/vector-icons";
 import { CategorySection } from "../components/CategorySection";
 import { MealItemList } from "../components/MealItemList";
-import { useLayoutEffect, useState } from "react";
-import { createTable, getMenuItems, saveMenuItems } from "../database";
-
-const mealsData = [
-  {
-    name: "Buretta",
-    price: 20,
-    category: "Starters",
-    id: 1,
-  },
-  {
-    name: "Pasta",
-    price: 20.99,
-    category: "Mains",
-    id: 1,
-  },
-  {
-    name: "Greek salad",
-    price: 20,
-    category: "Deserts",
-    id: 1,
-  },
-];
-const categories = mealsData.map((meal) => meal.category);
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import {
+  createTable,
+  deleteTable,
+  filterByQueryAndCategories,
+  getMenuItems,
+  saveMenuItems,
+  transformItems,
+  transformMenuImageUrl,
+  truncateTable,
+} from "../database";
+import debounce from "lodash.debounce";
+import { useEffect } from "react";
+import { useMenuContext } from "../context/menuContext";
+import { useUpdateEffect } from "../utills/hooks";
+import { getMenuCategories } from "../utills";
 
 export const Home = ({ navigation }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState("");
+  const { selectedCategories, setSelectedCategories, setMenuCategories } =
+    useMenuContext();
 
   const fetchData = async () => {
     try {
@@ -54,17 +49,21 @@ export const Home = ({ navigation }) => {
     }
   };
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     (async () => {
       try {
+        await deleteTable();
         await createTable();
         setLoading(true);
         let items = await getMenuItems();
+
+        // fetch from local database when there is data in it
         if (items.length === 0) {
           items = await fetchData();
-          saveMenuItems(items);
+          await saveMenuItems(transformMenuImageUrl(items));
         }
-        setMenuItems(items);
+        setMenuCategories(getMenuCategories(items));
+        setMenuItems(transformMenuImageUrl(items));
       } catch (error) {
         console.log(error);
       } finally {
@@ -72,6 +71,30 @@ export const Home = ({ navigation }) => {
       }
     })();
   }, []);
+
+  const lookup = useCallback((qry) => setQuery(qry), [query]);
+  const debouncedLookup = useMemo(() => debounce(lookup, 500), [query]);
+
+  useUpdateEffect(() => {
+    (async () => {
+      try {
+        let filteredCategories = [];
+        // if no category is selected, filter against all categories
+        if (selectedCategories.length === 0) {
+          filteredCategories = getMenuCategories(menuItems);
+        } else {
+          filteredCategories = selectedCategories;
+        }
+        const queryResult = await filterByQueryAndCategories(
+          query,
+          filteredCategories
+        );
+        setMenuItems(queryResult);
+      } catch (error) {
+        console.log(error);
+      }
+    })();
+  }, [query, selectedCategories]);
 
   return (
     <View style={styles.container}>
@@ -92,7 +115,11 @@ export const Home = ({ navigation }) => {
         </View>
         <View style={styles.inputWrapper}>
           <AntDesign name="search1" size={24} color="black" />
-          <TextInput placeholder="Search for a meal" style={styles.input} />
+          <TextInput
+            placeholder="Search for a meal"
+            style={styles.input}
+            onChangeText={debouncedLookup}
+          />
         </View>
       </View>
 
@@ -137,6 +164,7 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 5,
     padding: 20,
+    paddingVertical: 10,
   },
   heroHeadingText: {
     fontSize: 40,
@@ -153,7 +181,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     resizeMode: "cover",
     width: 120,
-    height: 150,
+    height: 130,
   },
   heroDescriptionWrapper: {
     gap: 10,

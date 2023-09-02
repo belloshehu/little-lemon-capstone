@@ -1,21 +1,54 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import { useMenuContext } from "../context/menuContext";
 
 export const CategorySection = ({ menus }) => {
-  const allCategories = menus.map((menu) => menu.category);
-  const set = new Set(allCategories);
-  const categories = [...set.keys()];
+  const { selectedCategories, setSelectedCategories, menuCategories } =
+    useMenuContext();
 
+  const addCategory = (category) => {
+    if (selectedCategories.includes(category)) {
+      const filteredCategories = selectedCategories.filter(
+        (selectedCategory) =>
+          selectedCategory.toLowerCase() !== category.toLowerCase()
+      );
+      setSelectedCategories(filteredCategories);
+    } else {
+      setSelectedCategories([...selectedCategories, category]);
+    }
+  };
   return (
     <View style={styles.container}>
       <Text style={styles.headingText}>ORDER FOR DELIVERY</Text>
       <ScrollView
         horizontal={true}
         contentContainerStyle={styles.categoryWrapper}>
-        {categories.map((category, index) => (
-          <Pressable style={styles.category} key={index}>
-            <Text style={styles.categoryText}>{category}</Text>
-          </Pressable>
+        {menuCategories.map((category, index) => (
+          <TouchableOpacity
+            style={{
+              ...styles.category,
+              backgroundColor: `${
+                selectedCategories.includes(category) ? "#475e59" : "#ddd"
+              }`,
+            }}
+            key={index}
+            onPress={() => addCategory(category)}>
+            <Text
+              style={{
+                ...styles.categoryText,
+                color: `${
+                  selectedCategories.includes(category) ? "#fff" : "#475e59"
+                }`,
+              }}>
+              {category}
+            </Text>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
@@ -28,15 +61,15 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderBottomWidth: 0.5,
     borderColor: "#475e59",
-    paddingBottom: 5,
+    paddingBottom: 1,
   },
   categoryWrapper: {
     flexDirection: "row",
     gap: 10,
-    paddingVertical: 10,
+    paddingVertical: 6,
   },
   headingText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#475e59",
   },

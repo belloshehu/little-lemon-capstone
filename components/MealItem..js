@@ -14,7 +14,7 @@ export const MealItem = ({ item }) => {
         </View>
         <Image
           source={{
-            uri: `https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/${image}?raw=true`,
+            uri: image,
           }}
           style={styles.image}
           alt={name}

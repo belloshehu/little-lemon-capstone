@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export const useReadProfile = () => {
   let data = null;
@@ -19,3 +19,15 @@ export const useReadProfile = () => {
   };
   return getData;
 };
+
+export function useUpdateEffect(effect, dependencies = []) {
+  const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    } else {
+      return effect();
+    }
+  }, dependencies);
+}
