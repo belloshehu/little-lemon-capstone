@@ -1,14 +1,18 @@
 import * as SQLite from "expo-sqlite";
 
-const db = SQLite.openDatabase("little_lemon");
+const db = SQLite.openDatabase("little_lemon.db");
 
 export async function createTable() {
   return new Promise((resolve, reject) => {
     db.transaction(
       (tx) => {
-        tx.executeSql(
-          "create table if not exists menus (id integer primary key not null, name text, price float, category text, description text);"
-        );
+        try {
+          tx.executeSql(
+            "CREATE TABLE IF NOT EXISTS menus (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, price NUMERIC NOT NULL, description TEXT NOT NULL, image TEXT, category TEXT NOT NULL);"
+          );
+        } catch (error) {
+          console.log("FAILED TO CREATE TABLE: " + error);
+        }
       },
       reject,
       resolve
@@ -16,30 +20,87 @@ export async function createTable() {
   });
 }
 
+export async function truncateTable() {
+  return new Promise((resolve, reject) => {
+    db.transaction(
+      (tx) => {
+        try {
+          tx.executeSql("TRUNCATE TABLE menus;");
+        } catch (error) {
+          console.log("FAILED TO DELETE TABLE DATA:  " + error);
+        }
+      },
+      reject,
+      resolve
+    );
+  });
+}
+export async function deleteTable() {
+  return new Promise((resolve, reject) => {
+    db.transaction(
+      (tx) => {
+        try {
+          tx.executeSql("DROP TABLE menus;");
+        } catch (error) {
+          console.log("FAILED TO DELETE TABLE:  " + error);
+        }
+      },
+      reject,
+      resolve
+    );
+  });
+}
 export async function getMenuItems() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     db.transaction((tx) => {
-      tx.executeSql("select * from menus", [], (_, { rows }) => {
-        resolve(rows._array);
-      });
+      try {
+        tx.executeSql("SELECT * FROM menus;", [], (_, { rows }) => {
+          resolve(rows._array);
+        });
+      } catch (error) {
+        console.log("FAILED TO FETCH MENU: " + error);
+        reject(error);
+      }
     });
   });
 }
 
-export function saveMenuItems(menuItems) {
-  db.transaction((tx) => {
-    // 2. Implement a single SQL statement to save all menu data in a table called menuitems.
-    // Check the createTable() function above to see all the different columns the table has
-    // Hint: You need a SQL statement to insert multiple rows at once.
-    tx.executeSql(
-      `INSERT INTO menus (name, description, price, category) VALUES ${menuItems
-        .map(
-          (item) =>
-            `('${item.name}', '${item.description}', '${item.price}', '${item.category}')`
-        )
-        .join(", ")}`
-    );
+export function transformMenuImageUrl(items) {
+  const transformedMenuItems = items.map((item) => ({
+    ...item,
+    image: `https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/${item.image}?raw=true`,
+  }));
+  return transformedMenuItems;
+}
+
+export function insertMenuItem({ name, price, description, image, category }) {
+  return new Promise((resolve, reject) => {
+    db.transaction((tx) => {
+      try {
+        tx.executeSql(
+          "INSERT INTO menus (name, price, description, image, category) VALUES (?, ?, ?, ?, ?)",
+          [name, price, description, image, category]
+        );
+        resolve({ name, price, description, image, category });
+      } catch (error) {
+        console.log("FAILED TO SAVE ITEM: " + error);
+        reject(error);
+      }
+    });
   });
+}
+
+export async function saveMenuItems(menuItems) {
+  // 2. Implement a single SQL statement to save all menu data in a table called menuitems.
+  // Check the createTable() function above to see all the different columns the table has
+  // Hint: You need a SQL statement to insert multiple rows at once.
+  try {
+    for (const item of menuItems) {
+      await insertMenuItem(item);
+    }
+  } catch (error) {
+    console.log("FAILED TO SAVE MENUS: ", error);
+  }
 }
 
 /**
@@ -62,19 +123,21 @@ export function saveMenuItems(menuItems) {
  * even though the query 'a' it's a substring of 'salad', so the combination of the two filters should be linked with the AND keyword
  *
  */
+
 export async function filterByQueryAndCategories(query, activeCategories) {
   return new Promise((resolve, reject) => {
     db.transaction((tx) => {
-      tx.executeSql(
-        `select * from menus where name like '%${query}%' and category in (${activeCategories
-          .map((category) => `'${category}'`)
-          .join(", ")})`,
-        [],
-        (_, { rows }) => {
-          resolve(rows._array);
-        }
-      );
+      let qStr = "?";
+      activeCategories.forEach((category) => {
+        qStr += ",?";
+      });
+      const sqlStatement =
+        `SELECT * FROM menus WHERE name LIKE "%${query}%" and category IN (` +
+        qStr +
+        ");";
+      tx.executeSql(sqlStatement, [...activeCategories], (_, { rows }) => {
+        resolve(rows._array);
+      });
     });
-    // resolve(SECTION_LIST_MOCK_DATA);
   });
 }

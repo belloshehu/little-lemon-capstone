@@ -20,14 +20,15 @@ export const Header = ({ navigation }) => {
 const styles = StyleSheet.create({
   wrapper: {
     flexDirection: "row",
-    gap: 20,
+    columnGap: 20,
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 30,
     width: "100%",
+    padding: 0,
   },
   logo: {
-    resizeMode: "cover",
+    resizeMode: "contain",
     height: 40,
   },
   profile: {
